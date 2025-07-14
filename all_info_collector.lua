@@ -1,6 +1,6 @@
--- 🚀 Deep Scanner v3.4 – RollBack Focus – בלי שום ספאם בכלל
--- ✅ שומר רק שמות ו-ID של Units / Items / Traits
--- 🛠️ דורש exploit עם writefile, getgc, getreg, getupvalues
+-- 🚀 Deep Scanner v4 – RollBack Focus – בלי ספאם, בלי stack overflow
+-- ✅ שומר שמות ו-ID של Units / Items / Traits בלבד
+-- 🛠️ דורש exploit עם writefile
 
 local RS = game:GetService("ReplicatedStorage")
 local results, seen = {}, {}
@@ -32,30 +32,9 @@ local function scanInstance(inst)
     end
 end
 
-local function deepScanTable(t, from)
-    for k,v in pairs(t) do
-        -- אין שום הדפסה פה!
-        if type(k)=="string" and type(v)=="string" then
-            local lk, lv = k:lower(), v:lower()
-            if lk:find("id") or lk:find("name") or lv:find("unit") or lv:find("item") or lv:find("trait") then
-                if lv:find("unit") or lv:find("hero") or lv:find("char") then
-                    add("Unit", v, "(from:"..from..")", k)
-                elseif lv:find("item") or lv:find("burner") or lv:find("lock") then
-                    add("Item", v, "(from:"..from..")", k)
-                elseif lv:find("trait") or lv:find("potential") then
-                    add("Trait", v, "(from:"..from..")", k)
-                end
-            end
-        elseif type(v)=="table" then
-            deepScanTable(v, from)
-        end
-    end
-end
+print("🔎 [Scanner] התחלת סריקה ממוקדת...")
 
--- 🟢 התחלת סריקה
-print("🔎 [Scanner] התחלת סריקה עמוקה...")
-
--- 🔎 מעבר על כל הצאצאים
+-- 🔎 מעבר על כל הצאצאים במשחק
 for _,inst in ipairs(game:GetDescendants()) do
     scanInstance(inst)
 end
@@ -70,41 +49,9 @@ for _,folderName in ipairs({"Items","Units","Traits","Gacha","Shop"}) do
     end
 end
 
--- 🔎 getgc
-if getgc then
-    for _,obj in ipairs(getgc(true)) do
-        if type(obj)=="table" then
-            deepScanTable(obj,"GC")
-        end
-    end
-end
-
--- 🔎 getreg
-if getreg then
-    for _,obj in ipairs(getreg()) do
-        if type(obj)=="table" then
-            deepScanTable(obj,"REG")
-        end
-    end
-end
-
--- 🔎 upvalues
-if debug and debug.getupvalues then
-    for _,f in ipairs(getgc(true)) do
-        if type(f)=="function" then
-            for _,v in ipairs(debug.getupvalues(f)) do
-                if type(v)=="table" then
-                    deepScanTable(v,"UPVAL")
-                end
-            end
-        end
-    end
-end
-
 -- 💾 כתיבת הקובץ
 local finalText = table.concat(results, "\n")
 writefile("RollBackData.txt", finalText)
 
--- 🏁 סוף
-print("✅ [Scanner] הסריקה הסתיימה!")
-print("📂 [Scanner] הקובץ נשמר בשם: RollBackData.txt")
+print("✅ [Scanner] הסריקה הסתיימה בהצלחה!")
+print("📂 [Scanner] הקובץ נשמר בשם: RollBackData.txt (ניתן למצוא אותו דרך Media Manager ב־BlueStacks)")
