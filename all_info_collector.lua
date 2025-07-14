@@ -1,4 +1,4 @@
--- 🚀 Deep Scanner v3.2 – RollBack Focus – בלי ספאם בכלל
+-- 🚀 Deep Scanner v3.3 – RollBack Focus – בלי שום ספאם בקונסול
 -- ✅ שומר רק שמות ו-ID של Units / Items / Traits
 -- 🛠️ דורש exploit עם writefile, getgc, getreg, getupvalues
 
@@ -33,7 +33,6 @@ local function scanInstance(inst)
 end
 
 local function deepScanTable(t, from)
-    -- לא מדפיס כלום! רק מוסיף לרשימה
     for k,v in pairs(t) do
         if type(k)=="string" and type(v)=="string" then
             local lk, lv = k:lower(), v:lower()
