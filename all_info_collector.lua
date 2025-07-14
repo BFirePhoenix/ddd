@@ -1,50 +1,46 @@
--- ⚡ Ultra Deep Dumper v4000.0++
--- 🔥 שומר את כל הממצאים בקובץ אחד: AllGameDump.txt
--- 🛠️ דורש exploit עם getgc/getreg/getloadedmodules ו-writefile
--- ✔️ כל Remote / Item / Unit / Trait / Id / DisplayName / Constants
+-- 🔥 Ultra Deep Scanner v3 – RollBack Focus
+-- ✅ שומר רק שמות ו-ID של Units / Items / Traits
+-- 🛠️ דורש exploit עם writefile, getgc, getreg, getupvalues
+-- ⚡ חיפוש חכם, מהיר ועמוק יותר בכל דרך אפשרית
 
-local HttpService = game:GetService("HttpService")
 local RS = game:GetService("ReplicatedStorage")
-local results = {}
-local seen = {}
+local results, seen = {}, {}
 
-local function addLine(tag, data)
-    table.insert(results, "["..tag.."] "..HttpService:JSONEncode(data))
+local function add(tag,name,path,id)
+    local line = "["..tag.."] Name: "..tostring(name).." | ID: "..tostring(id or "N/A").." | Path: "..tostring(path)
+    if not seen[line] then
+        seen[line] = true
+        table.insert(results, line)
+    end
 end
 
-local function mark(obj)
-    local id = tostring(obj)
-    if seen[id] then return false end
-    seen[id] = true
-    return true
+local function handleInstance(obj, tag)
+    local id, name
+    pcall(function() id = obj.Id end)
+    pcall(function() name = obj.DisplayName end)
+    name = name or obj.Name
+    add(tag, name, obj:GetFullName(), id)
 end
 
 local function scanInstance(inst)
-    if not mark(inst) then return end
-    local low = inst.Name:lower()
-    if inst:IsA("RemoteEvent") or inst:IsA("RemoteFunction") then
-        addLine("Remote", {Name=inst.Name,Path=inst:GetFullName(),Class=inst.ClassName})
-    elseif low:find("item") or low:find("burner") or low:find("lock") then
-        addLine("Item", {Name=inst.Name,Path=inst:GetFullName(),Class=inst.ClassName,Attrs=inst:GetAttributes()})
-    elseif low:find("unit") or low:find("hero") or low:find("char") then
-        addLine("Unit", {Name=inst.Name,Path=inst:GetFullName(),Class=inst.ClassName,Attrs=inst:GetAttributes()})
-    elseif low:find("trait") or low:find("potential") then
-        addLine("Trait", {Name=inst.Name,Path=inst:GetFullName(),Class=inst.ClassName,Attrs=inst:GetAttributes()})
-    end
-    for _,prop in ipairs({"DisplayName","Id","Value","Text","ToolTip","Texture"}) do
-        local ok,v = pcall(function() return inst[prop] end)
-        if ok and v~=nil and typeof(v)~="Instance" then
-            addLine("Prop", {Owner=inst.Name,Prop=prop,Val=tostring(v)})
-        end
+    local n = inst.Name:lower()
+    if n:find("unit") or n:find("hero") or n:find("char") then
+        handleInstance(inst,"Unit")
+    elseif n:find("item") or n:find("burner") or n:find("lock") then
+        handleInstance(inst,"Item")
+    elseif n:find("trait") or n:find("potential") then
+        handleInstance(inst,"Trait")
     end
 end
 
-print("🔎 מתחיל סריקה עמוקה...")
+print("🔎 [Scanner] מתחיל סריקה עמוקה...")
 
--- 🔎 scan all descendants
+-- 🔎 מעבר על כל הצאצאים
 for _,inst in ipairs(game:GetDescendants()) do
     scanInstance(inst)
 end
+
+-- 🔎 מעבר על תיקיות ידועות
 for _,folderName in ipairs({"Items","Units","Traits","Gacha","Shop"}) do
     local f = RS:FindFirstChild(folderName)
     if f then
@@ -54,106 +50,60 @@ for _,folderName in ipairs({"Items","Units","Traits","Gacha","Shop"}) do
     end
 end
 
--- 🔎 scan getgc
+-- 🧠 פונקציה לחפש בטבלה כל מפתח שקשור לשמות/IDs
+local function deepScanTable(t, from)
+    for k,v in pairs(t) do
+        if type(k)=="string" and type(v)=="string" then
+            local lk, lv = k:lower(), v:lower()
+            if lk:find("id") or lk:find("name") or lv:find("unit") or lv:find("item") or lv:find("trait") then
+                if lv:find("unit") or lv:find("hero") or lv:find("char") then
+                    add("Unit", v, "(from:"..from..")", k)
+                elseif lv:find("item") or lv:find("burner") or lv:find("lock") then
+                    add("Item", v, "(from:"..from..")", k)
+                elseif lv:find("trait") or lv:find("potential") then
+                    add("Trait", v, "(from:"..from..")", k)
+                end
+            end
+        elseif type(v)=="table" then
+            deepScanTable(v, from)
+        end
+    end
+end
+
+-- 🔎 getgc
 if getgc then
     for _,obj in ipairs(getgc(true)) do
-        if typeof(obj)=="table" then
-            if mark(obj) then
-                for k,v in pairs(obj) do
-                    if type(k)=="string" then
-                        local lk=k:lower()
-                        if lk:find("id") or lk:find("item") or lk:find("unit") or lk:find("trait") then
-                            addLine("GC-Key",{Key=k,Val=tostring(v)})
-                        end
-                    end
-                    if type(v)=="string" then
-                        local lv=v:lower()
-                        if lv:find("id") or lv:find("item") or lv:find("unit") or lv:find("trait") then
-                            addLine("GC-Val",{Val=v})
-                        end
-                    end
-                end
-            end
-        elseif typeof(obj)=="function" then
-            if mark(obj) then
-                for _,c in ipairs(debug.getconstants(obj)) do
-                    if type(c)=="string" then
-                        local lc=c:lower()
-                        if lc:find("id") or lc:find("item") or lc:find("unit") or lc:find("trait") then
-                            addLine("GC-Const",{Const=c})
-                        end
-                    end
-                end
-                for i,uv in ipairs(debug.getupvalues(obj)) do
-                    if type(uv)=="string" then
-                        local lu=uv:lower()
-                        if lu:find("id") or lu:find("item") or lu:find("unit") or lu:find("trait") then
-                            addLine("GC-Upv",{Upval=uv})
-                        end
-                    elseif type(uv)=="table" then
-                        for k,v in pairs(uv) do
-                            if type(k)=="string" then
-                                local lk=k:lower()
-                                if lk:find("id") or lk:find("item") or lk:find("unit") or lk:find("trait") then
-                                    addLine("GC-UpvKey",{Key=k,Val=tostring(v)})
-                                end
-                            end
-                        end
-                    end
-                end
-            end
+        if type(obj)=="table" then
+            deepScanTable(obj,"GC")
         end
     end
 end
 
--- 🔎 scan getreg
+-- 🔎 getreg
 if getreg then
-    for k,v in pairs(getreg()) do
-        local t = typeof(v)
-        if t=="Instance" then
-            scanInstance(v)
-        elseif t=="table" then
-            for kk,vv in pairs(v) do
-                if type(kk)=="string" then
-                    local lk=kk:lower()
-                    if lk:find("id") or lk:find("item") or lk:find("unit") or lk:find("trait") then
-                        addLine("REG-Key",{Key=kk,Val=tostring(vv)})
-                    end
-                end
-                if type(vv)=="string" then
-                    local lv=vv:lower()
-                    if lv:find("id") or lv:find("item") or lv:find("unit") or lv:find("trait") then
-                        addLine("REG-Val",{Val=vv})
-                    end
+    for _,obj in ipairs(getreg()) do
+        if type(obj)=="table" then
+            deepScanTable(obj,"REG")
+        end
+    end
+end
+
+-- 🔎 upvalues
+if debug and debug.getupvalues then
+    for _,f in ipairs(getgc(true)) do
+        if type(f)=="function" then
+            for i,v in ipairs(debug.getupvalues(f)) do
+                if type(v)=="table" then
+                    deepScanTable(v,"UPVAL")
                 end
             end
         end
     end
 end
 
--- 🔎 scan loaded modules
-if getloadedmodules then
-    for _,mod in ipairs(getloadedmodules()) do
-        if not seen[mod] then
-            seen[mod] = true
-            local ok,src = pcall(decompile,mod)
-            if ok and src and type(src)=="string" then
-                local lineNum = 0
-                for w in src:gmatch("[^\r\n]+") do
-                    lineNum = lineNum + 1
-                    local lw = w:lower()
-                    if lw:find("id") or lw:find("item") or lw:find("unit") or lw:find("trait") then
-                        addLine("MOD-Src",{Module=mod.Name,Line=lineNum,Text=w})
-                    end
-                end
-            end
-        end
-    end
-end
+-- 💾 כתיבת הקובץ הסופי
+local finalText = table.concat(results, "\n")
+writefile("RollBackData.txt", finalText)
 
--- 💾 שמירת כל המידע בקובץ אחד
-local dumpText = table.concat(results,"\n")
-writefile("AllGameDump.txt", dumpText)
-
-print("✅ הסריקה הסתיימה! כל הממצאים נשמרו בקובץ: AllGameDump.txt")
-print("👉 חפש את AllGameDump.txt בתיקיית workspace / Documents של האמולטור (BlueStacks Media Manager).")
+print("✅ [Scanner] הסתיים! נמצא: "..#results.." רשומות.")
+print("📂 הקובץ נשמר בשם: RollBackData.txt (מצא ב-Media Manager / Documents)")
