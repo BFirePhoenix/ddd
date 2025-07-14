@@ -1,7 +1,6 @@
--- 🔥 Ultra Deep Scanner v3 – RollBack Focus
+-- 🔥 Ultra Deep Scanner v3.1 – RollBack Focus (No Console Spam)
 -- ✅ שומר רק שמות ו-ID של Units / Items / Traits
 -- 🛠️ דורש exploit עם writefile, getgc, getreg, getupvalues
--- ⚡ חיפוש חכם, מהיר ועמוק יותר בכל דרך אפשרית
 
 local RS = game:GetService("ReplicatedStorage")
 local results, seen = {}, {}
@@ -33,24 +32,6 @@ local function scanInstance(inst)
     end
 end
 
-print("🔎 [Scanner] מתחיל סריקה עמוקה...")
-
--- 🔎 מעבר על כל הצאצאים
-for _,inst in ipairs(game:GetDescendants()) do
-    scanInstance(inst)
-end
-
--- 🔎 מעבר על תיקיות ידועות
-for _,folderName in ipairs({"Items","Units","Traits","Gacha","Shop"}) do
-    local f = RS:FindFirstChild(folderName)
-    if f then
-        for _,c in ipairs(f:GetDescendants()) do
-            scanInstance(c)
-        end
-    end
-end
-
--- 🧠 פונקציה לחפש בטבלה כל מפתח שקשור לשמות/IDs
 local function deepScanTable(t, from)
     for k,v in pairs(t) do
         if type(k)=="string" and type(v)=="string" then
@@ -66,6 +47,24 @@ local function deepScanTable(t, from)
             end
         elseif type(v)=="table" then
             deepScanTable(v, from)
+        end
+    end
+end
+
+-- 🟢 התחלת הסריקה
+print("🔎 [Scanner] מתחיל סריקה עמוקה לכל ה-Units / Items / Traits...")
+
+-- 🔎 מעבר על כל הצאצאים
+for _,inst in ipairs(game:GetDescendants()) do
+    scanInstance(inst)
+end
+
+-- 🔎 תיקיות ידועות
+for _,folderName in ipairs({"Items","Units","Traits","Gacha","Shop"}) do
+    local f = RS:FindFirstChild(folderName)
+    if f then
+        for _,c in ipairs(f:GetDescendants()) do
+            scanInstance(c)
         end
     end
 end
@@ -92,7 +91,7 @@ end
 if debug and debug.getupvalues then
     for _,f in ipairs(getgc(true)) do
         if type(f)=="function" then
-            for i,v in ipairs(debug.getupvalues(f)) do
+            for _,v in ipairs(debug.getupvalues(f)) do
                 if type(v)=="table" then
                     deepScanTable(v,"UPVAL")
                 end
@@ -101,9 +100,10 @@ if debug and debug.getupvalues then
     end
 end
 
--- 💾 כתיבת הקובץ הסופי
+-- 💾 כתיבת הקובץ
 local finalText = table.concat(results, "\n")
 writefile("RollBackData.txt", finalText)
 
-print("✅ [Scanner] הסתיים! נמצא: "..#results.." רשומות.")
-print("📂 הקובץ נשמר בשם: RollBackData.txt (מצא ב-Media Manager / Documents)")
+-- 🏁 סוף
+print("✅ [Scanner] הסריקה הסתיימה בהצלחה!")
+print("📂 [Scanner] הקובץ נשמר בשם: RollBackData.txt (מצא ב-Media Manager / Documents)")
