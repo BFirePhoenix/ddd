@@ -1,4 +1,4 @@
--- 🔥 Ultra Deep Scanner v3.1 – RollBack Focus (No Console Spam)
+-- 🚀 Deep Scanner v3.2 – RollBack Focus – בלי ספאם בכלל
 -- ✅ שומר רק שמות ו-ID של Units / Items / Traits
 -- 🛠️ דורש exploit עם writefile, getgc, getreg, getupvalues
 
@@ -33,6 +33,7 @@ local function scanInstance(inst)
 end
 
 local function deepScanTable(t, from)
+    -- לא מדפיס כלום! רק מוסיף לרשימה
     for k,v in pairs(t) do
         if type(k)=="string" and type(v)=="string" then
             local lk, lv = k:lower(), v:lower()
@@ -52,7 +53,7 @@ local function deepScanTable(t, from)
 end
 
 -- 🟢 התחלת הסריקה
-print("🔎 [Scanner] מתחיל סריקה עמוקה לכל ה-Units / Items / Traits...")
+print("🔎 [Scanner] התחלת סריקה עמוקה...")
 
 -- 🔎 מעבר על כל הצאצאים
 for _,inst in ipairs(game:GetDescendants()) do
@@ -105,5 +106,5 @@ local finalText = table.concat(results, "\n")
 writefile("RollBackData.txt", finalText)
 
 -- 🏁 סוף
-print("✅ [Scanner] הסריקה הסתיימה בהצלחה!")
-print("📂 [Scanner] הקובץ נשמר בשם: RollBackData.txt (מצא ב-Media Manager / Documents)")
+print("✅ [Scanner] הסריקה הסתיימה!")
+print("📂 [Scanner] הקובץ נשמר בשם: RollBackData.txt")
